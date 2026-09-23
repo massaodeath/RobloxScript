@@ -20,8 +20,6 @@ if not worldDrops then
 end
 
 local itemTemplates = ServerStorage:WaitForChild("ItemDrops")
-
--- Estado somente no servidor. O cliente nunca recebe permissão para alterá-lo.
 local questStates = {}
 local lastAttackAt = {}
 local lastDamager = {}
@@ -66,7 +64,6 @@ local function setEnemyEnabled(enemy, enabled)
 				object.CanTouch = object:GetAttribute("QuestOriginalCanTouch") == true
 				object.CanQuery = object:GetAttribute("QuestOriginalCanQuery") == true
 			else
-				-- Guardamos o estado inicial para restaurar corretamente no respawn.
 				object:SetAttribute("QuestOriginalTransparency", object.Transparency)
 				object:SetAttribute("QuestOriginalCanCollide", object.CanCollide)
 				object:SetAttribute("QuestOriginalCanTouch", object.CanTouch)
@@ -103,7 +100,6 @@ local function dropItem(position, enemyInfo)
 	end
 	handle.CFrame = CFrame.new(position + Vector3.new(0, 2, 0))
 
-	-- Evita que drops esquecidos ocupem o mapa para sempre.
 	task.delay(30, function()
 		if item and item.Parent then
 			item:Destroy()
@@ -133,12 +129,9 @@ local function onEnemyDied(enemy)
 	local root = enemy:FindFirstChild("HumanoidRootPart")
 	local deathPosition = root and root.Position or enemy:GetPivot().Position
 	local initialCFrame = spawnCFrames[enemy.Name] or enemy:GetPivot()
-	-- -500 studs deixa o NPC bem abaixo do terreno enquanto aguarda o respawn.
 	enemy:PivotTo(initialCFrame * CFrame.new(0, -500, 0))
 	local killer = lastDamager[enemy]
 
-	-- Só o jogador que realmente causou o último dano, com quest ativa,
-	-- recebe progresso. Assim uma morte externa não pode completar a missão.
 	if killer and killer.Parent == Players then
 		local state = getState(killer)
 		if state.active and not state.defeated[enemy.Name] then
@@ -162,7 +155,6 @@ local function onEnemyDied(enemy)
 		local humanoid = enemy and enemy:FindFirstChildOfClass("Humanoid")
 		local spawnCFrame = spawnCFrames[enemyName]
 		if enemy and enemy.Parent and humanoid and spawnCFrame then
-			-- É o mesmo NPC: ele ficou invisível abaixo do mapa e volta ao ponto inicial.
 			enemy:PivotTo(spawnCFrame)
 			humanoid.Health = humanoid.MaxHealth
 			humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
@@ -233,7 +225,6 @@ attackRemote.OnServerEvent:Connect(function(player)
 	end
 
 	local character = player.Character
-	-- O jogador deve estar segurando a Tool criada pelo servidor no StarterPack.
 	if not character or not character:FindFirstChild("QuestSword") then
 		return
 	end
